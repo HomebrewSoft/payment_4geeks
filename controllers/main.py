@@ -17,19 +17,9 @@ from odoo.tools.translate import _
 
 _logger = logging.getLogger(__name__)
 
-Error1 = _(
-    "Cardconnect Errors 1: cardconnect Payment Gateway Currently not Configure for this Currency pls Connect Your Shop Provider !!!")
-Error2 = _("Cardconnect Errors 2: Authentication Error: API keys are incorrect.")
-Error3 = _("Cardconnect Errors 3: Authorization Error: not authorized to perform the attempted action.")
-Error4 = _("Cardconnect Errors 4: Issue occure while generating clinet token, pls contact your shop provider.")
-Error5 = _("Cardconnect Errors 5: Default 'Merchant Account ID' not found.")
-Error6 = _("Cardconnect Errors 6: Transaction not Found.")
-Error7 = _("Cardconnect Errors 7: Error occured while payment processing or Some required data missing.")
-Error8 = _("Cardconnect Errors 8: Validation error occured. Please contact your administrator.")
-Error9 = _(
-    "Cardconnect Errors 9: Payment has been recevied on cardconnect end but some error occured during processing the order.")
-Error10 = _("Cardconnect Errors 10: Unknow Error occured. Unable to validate the cardconnect payment.")
-SuccessMsg = _("Payment Successfully recieved and submitted for settlement.")
+messages = {
+    'Succeeded': _('Payment Successfully received and submitted'),
+}
 
 
 class P4GeeksController(http.Controller):
@@ -39,10 +29,38 @@ class P4GeeksController(http.Controller):
             'message': '',
             'redirect_brt': False,
         }
+        PaymentAcquirer = request.env['payment.acquirer']
+        acquirer_id = PaymentAcquirer.sudo().browse(request.website.get_4geeks_payment_acquirer_id())
         try:
-            PaymentAcquirer = request.env['payment.acquirer']
-            acquirer_id = PaymentAcquirer.sudo().browse(request.website.get_4geeks_payment_acquirer_id())
-            print(acquirer_id)
+            gpayments.client_id = acquirer_id.p4geeks_client_id
+            gpayments.client_secret = acquirer_id.p4geeks_client_secret
+            gpayments.auth()  # TODO review expiration
+        except:
+            pass  # TODO
+        exp_month, exp_year = post.get('cardExpiry').split('/')
+        exp_year = '20' + exp_year
+        try:
+            result = gpayments.SimpleCharge.create(
+                amount=post.get('amount'),
+                description=post.get('reference'),
+                entity_description=acquirer_id.p4geeks_entity_description + post.get('reference'),
+                currency=post.get('currency'),
+                credit_card_number=post.get('cardnumber'),
+                credit_card_security_code_number=post.get('cardCVC'),
+                exp_month=exp_month,
+                exp_year=exp_year,
+            )
+            charge_log = result.get('charge_log')
+            if charge_log['status'] == 'succeeded':
+                values.update({
+                    'status': True,
+                    'reference': post.get('reference'),
+                    'currency': charge_log['currency'],
+                    'amount': charge_log['amount'],
+                    'acquirer_reference': result.get('charge_id'),
+                    'partner_reference': post,
+                    'tx_msg': messages['Succeeded'],
+                })
         except:
             raise  # TODO
         return values
@@ -50,7 +68,6 @@ class P4GeeksController(http.Controller):
     @http.route('/payment/4geeks', type='http', auth="public", website=True)
     def cardconnect_payment(self, **post):
         """ 4geeks Payment Controller """
-        _logger.info('Beginning 4geeks with post data %s', pprint.pformat(post))
         result = self.p4geeks_do_payment(**post)
 
         if not result['status']:
