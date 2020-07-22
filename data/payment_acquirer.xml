@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<odoo noupdate="0">
-<!-- TODO -->
+<odoo noupdate="1">
+    <record id="payment_acquirer_4geeks" model="payment.acquirer">
+        <field name="name">4Geeks</field>
+        <field name="provider">4geeks</field>
+        <field name="view_template_id" ref="payment.default_acquirer_button"/>
+        <field name="image_128" type="base64" file="payment_4geeks/static/src/img/4geeks_icon.png"/>
+        <field name="view_template_id" ref="payment_cardconnect_cr.cardconnect_form"/>
+        <field name="registration_view_template_id" ref="payment_cardconnect_cr.cardconnect_checkout_s2s_form"/>
+    </record>
 </odoo>
