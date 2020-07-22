@@ -43,7 +43,7 @@ class P4GeeksController(http.Controller):
             result = gpayments.SimpleCharge.create(
                 amount=post.get('amount'),
                 description=post.get('reference'),
-                entity_description=acquirer_id.p4geeks_entity_description + post.get('reference'),
+                entity_description=acquirer_id.p4geeks_entity_description,
                 currency=post.get('currency'),
                 credit_card_number=post.get('cardnumber'),
                 credit_card_security_code_number=post.get('cardCVC'),
