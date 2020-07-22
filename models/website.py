@@ -8,5 +8,5 @@ class Website(models.Model):
     @api.model
     def get_4geeks_payment_acquirer_id(self):
         IrModelData = self.env['ir.model.data']
-        acquirere_id = IrModelData.sudo().get_object_reference('payment_4geeks', 'payment_acquirer_4geeks')[1]
-        return acquirere_id or 0
+        acquirer_id = IrModelData.sudo().get_object_reference('payment_4geeks', 'payment_acquirer_4geeks')[1]
+        return acquirer_id or 0

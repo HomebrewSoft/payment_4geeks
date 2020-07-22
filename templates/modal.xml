@@ -22,7 +22,7 @@
                                 <input type='hidden' name='amount' t-att-value='amount or "0.0"'/>
                                 <input type='hidden' name='currency' t-att-value='currency.name'/>
                             </div>
-                            <input type="hidden" name='4geeks-acquirer-id' id="4geeks-acquirer-id" t-att-value="'%s' %website.get_cardconnect_payment_acquirere_id()"/>
+                            <input type="hidden" name='4geeks-acquirer-id' id="4geeks-acquirer-id" t-att-value="'%s' %website.get_4geeks_payment_acquirer_id()"/>
                             <div class="panel panel-default credit-card-box">
                                 <div class="panel-heading display-table">
                                     <div class="row display-tr"></div>

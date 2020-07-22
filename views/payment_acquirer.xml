@@ -1,4 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-<!-- TODO -->
+    <record id="payment_acquirer_view_form" model="ir.ui.view">
+        <field name="name">payment.acquirer.view.form.inherited.4geeks</field>
+        <field name="model">payment.acquirer</field>
+        <field name="inherit_id" ref="payment.acquirer_form"/>
+        <field name="arch" type="xml">
+            <group name="acquirer" position="inside">
+                <group name="4geeks_credentials" attrs="{'invisible': [('provider', '!=', '4geeks')]}">
+                    <field name="p4geeks_client_id" attrs="{'required': [('provider', '=', '4geeks')]}"/>
+                    <field name="p4geeks_client_secret" attrs="{'required': [('provider', '=', '4geeks')]}"/>
+                </group>
+            </group>
+        </field>
+    </record>
 </odoo>

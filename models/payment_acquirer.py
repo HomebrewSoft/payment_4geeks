@@ -10,3 +10,11 @@ class PaymentAcquirer(models.Model):
             ('4geeks', '4Geeks'),
         ],
     )
+    p4geeks_client_id = fields.Char(
+        string='Client ID',
+        required_if_provider='4geeks', groups='base.group_user'
+    )
+    p4geeks_client_secret = fields.Char(
+        string='Client Secret',
+        required_if_provider='4geeks', groups='base.group_user'
+    )

@@ -3,6 +3,11 @@ import logging
 import pprint
 from datetime import datetime
 
+try:
+    import gpayments
+except ImportError:
+    pass
+
 import werkzeug
 from odoo import http
 from odoo.http import request
@@ -29,7 +34,6 @@ SuccessMsg = _("Payment Successfully recieved and submitted for settlement.")
 
 class P4GeeksController(http.Controller):
     def p4geeks_do_payment(self, **post):
-        order, reference, tx = request.website.sale_get_order(), post.get('reference'), None
         values = {
             'status': False,
             'message': '',
@@ -37,97 +41,16 @@ class P4GeeksController(http.Controller):
         }
         try:
             PaymentAcquirer = request.env['payment.acquirer']
-            acquirere_id = \
-                request.env['ir.model.data'].get_object_reference('payment_cardconnect_cr', 'payment_acquirer_cconnect')[1]
-
-            acquirer_credential = PaymentAcquirer.sudo().browse(acquirere_id)
-
-            # environment = acquirer_credential.environment
-            merchant_id = acquirer_credential.cconnect_merchant_account
-            cconnect_url = acquirer_credential.cconnect_url
-            cconnect_user = acquirer_credential.cconnect_user
-            cconnect_pwd = acquirer_credential.cconnect_pwd
-            customer_obj = order.partner_id
-            if reference:
-                tx = request.env['payment.transaction'].sudo().search([('reference', '=', reference)])
-            if tx:
-                result = {  # TODO
-                    'respstat': 'A',
-                    'amount': '750',
-                    'token': 'supertoken',
-                }
-                if result.get('respstat') == "A":
-                    values.update({
-                        'status': True if result.get('respstat') == "A" else False,
-                        'reference': reference,
-                        'currency': post.get('currency'),
-                        'amount': result.get('amount'),
-                        'acquirer_reference': result.get('token'),
-                        'partner_reference': post,
-                        'tx_msg': SuccessMsg
-                    })
-                    _logger.info('Cardconnect form_feedback with values %s', pprint.pformat(values))  # debug
-                    res = request.env['payment.transaction'].sudo().form_feedback(values, 'cardconnect')
-                    if not res:
-                        tx.sudo()._set_transaction_error(Error8)
-                        values.update({
-                            'status': False,
-                            'redirect_brt': False,
-                            'message': Error8,
-                        })
-                else:
-                    values.update({
-                        'status': False,
-                        'reference': reference,
-                        'currency': post.get('currency'),
-                        'amount': result.get('amount'),
-                        'acquirer_reference': result.get('token'),
-                        'partner_reference': post,
-                        'tx_msg': "Payment Failed"
-                    })
-                    _logger.info('Cardconnect form_feedback with values %s', pprint.pformat(values))  # debug
-                    res = request.env['payment.transaction'].sudo().form_feedback(values, 'cardconnect')
-                    if not res:
-                        tx.sudo()._set_transaction_error(Error8)
-                        values.update({
-                            'status': False,
-                            'redirect_brt': False,
-                            'message': Error8,
-                        })
-            elif not tx:
-                values.update({'status': False, 'redirect_brt': True, 'message': Error6})
-            else:
-                # more condition can we added
-                values.update({'status': False, 'redirect_brt': True, 'message': Error7})
-        except Exception as e:
-            _logger.error(
-                "************Cardconnect exception occured ******************** \n 'cardconnect_payment' ------- exception=%r",
-                e)  # debug
-            if reference:
-                tx = request.env['payment.transaction'].search([('reference', '=', reference)])
-
-            if tx and values['status']:
-                tx.sudo().write({
-                    'cct_txnid': values['acquirer_reference'],
-                    'acquirer_reference': values['acquirer_reference'],
-                    'state': 'error',
-                    'date': datetime.now().strftime(DEFAULT_SERVER_DATETIME_FORMAT),
-                    'state_message': Error9,
-                })
-                values.update({'status': False, 'redirect_brt': True, 'message': Error9})
-            elif tx and not values['status']:
-                tx.sudo()._set_transaction_error(Error1)
-                values.update({'status': False, 'redirect_brt': True, 'message': e or Error1})
-            elif not tx:
-                values.update({'status': False, 'redirect_brt': True, 'message': Error6})
-            else:
-                values.update({'status': False, 'redirect_brt': True, 'message': Error10})
+            acquirer_id = PaymentAcquirer.sudo().browse(request.website.get_4geeks_payment_acquirer_id())
+            print(acquirer_id)
+        except:
+            raise  # TODO
         return values
 
     @http.route('/payment/4geeks', type='http', auth="public", website=True)
     def cardconnect_payment(self, **post):
         """ 4geeks Payment Controller """
-        _logger.info('Beginning 4geeks with post data %s', pprint.pformat(post))  # debug
+        _logger.info('Beginning 4geeks with post data %s', pprint.pformat(post))
         result = self.p4geeks_do_payment(**post)
 
         if not result['status']:
@@ -143,6 +66,6 @@ class P4GeeksController(http.Controller):
             'reference': '/',
             'amount': order.amount_total,
             'currency': order.currency_id,
-            'p4geeks-acquirer-id': acquirer_id,
+            '4geeks-acquirer-id': acquirer_id,
         }
         return request.env['ir.ui.view'].render_template("payment_4geeks.4geeks_template_modal", values)
