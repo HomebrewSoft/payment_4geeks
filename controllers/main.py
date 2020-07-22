@@ -19,11 +19,14 @@ _logger = logging.getLogger(__name__)
 
 messages = {
     'Succeeded': _('Payment Successfully received and submitted'),
+    'TransactionNotfound': _('Error: Transaction not found'),
 }
 
 
 class P4GeeksController(http.Controller):
     def p4geeks_do_payment(self, **post):
+        reference = post.get('reference')
+        tx = None
         values = {
             'status': False,
             'message': '',
@@ -37,32 +40,40 @@ class P4GeeksController(http.Controller):
             gpayments.auth()  # TODO review expiration
         except:
             pass  # TODO
-        exp_month, exp_year = post.get('cardExpiry').split('/')
-        exp_year = '20' + exp_year
-        try:
-            result = gpayments.SimpleCharge.create(
-                amount=post.get('amount'),
-                description=post.get('reference'),
-                entity_description=acquirer_id.p4geeks_entity_description,
-                currency=post.get('currency'),
-                credit_card_number=post.get('cardnumber'),
-                credit_card_security_code_number=post.get('cardCVC'),
-                exp_month=exp_month,
-                exp_year=exp_year,
-            )
-            charge_log = result.get('charge_log')
-            if charge_log['status'] == 'succeeded':
-                values.update({
-                    'status': True,
-                    'reference': post.get('reference'),
-                    'currency': charge_log['currency'],
-                    'amount': charge_log['amount'],
-                    'acquirer_reference': result.get('charge_id'),
-                    'partner_reference': post,
-                    'tx_msg': messages['Succeeded'],
-                })
-        except:
-            raise  # TODO
+        if reference:
+            tx = request.env['payment.transaction'].sudo().search([('reference', '=', reference)])
+        if tx:
+            exp_month, exp_year = post.get('cardExpiry').split('/')
+            exp_year = '20' + exp_year
+            try:
+                result = gpayments.SimpleCharge.create(
+                    amount=post.get('amount'),
+                    description=reference,
+                    entity_description=acquirer_id.p4geeks_entity_description,
+                    currency=post.get('currency'),
+                    credit_card_number=post.get('cardnumber'),
+                    credit_card_security_code_number=post.get('cardCVC'),
+                    exp_month=exp_month,
+                    exp_year=exp_year,
+                )
+                charge_log = result.get('charge_log')
+                if charge_log['status'] == 'succeeded':
+                    values.update({
+                        'status': True,
+                        'reference': reference,
+                        'currency': charge_log['currency'],
+                        'amount': charge_log['amount'],
+                        'acquirer_reference': result.get('charge_id'),
+                        'partner_reference': post,
+                        'tx_msg': messages['Succeeded'],
+                    })
+                    res = request.env['payment.transaction'].sudo().form_feedback(values, '4geeks')
+                    print(res)
+            except:
+                raise  # TODO
+        elif not tx:
+            values.update({'status': False, 'redirect_brt': True, 'message': messages['TransactionNotfound']})
+
         return values
 
     @http.route('/payment/4geeks', type='http', auth="public", website=True)
