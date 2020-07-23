@@ -6,17 +6,18 @@
     'website': 'https://gitlab.com/HomebrewSoft/misc/payment_4geeks',
     'depends': [
         'payment',
+        'website',
     ],
     'data': [
         # security
-        # data
-        'data/payment_acquirer.xml',
-        # reports
         # templates
         'templates/assets.xml',
         'templates/checkout_s2s_form.xml',
         'templates/form.xml',
         'templates/modal.xml',
+        # data
+        'data/payment_acquirer.xml',
+        # reports
         # views
         'views/payment_acquirer.xml',
     ],
