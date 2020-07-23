@@ -39,16 +39,15 @@
                                                 </div>
                                                 <input type="text" class="form-control" name="cardnumber" id="validationCustomUsername" placeholder="Card Number" aria-describedby="inputGroupPrepend" required="required"/>
                                                 <div class="invalid-feedback">
-                                                    Please add Valid CardNumber.
-</div>
+                                                    <span>Please add Valid Card Number.</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="col-xs-12 display-inline">
                                         <div class="form-group col-md-6">
                                             <label for="cardExpiry">
-                                                <span class="hidden-xs">EXPIRATION</span>
-                                                DATE
+                                                <span>EXPIRATION DATE</span>
                                             </label>
                                             <input type="tel" class="form-control" name="cardExpiry" placeholder="MM / YY" autocomplete="cc-exp" required="required"/>
                                         </div>
