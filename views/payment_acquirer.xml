@@ -7,11 +7,8 @@
         <field name="arch" type="xml">
             <group name="acquirer" position="inside">
                 <group name="4geeks_credentials" attrs="{'invisible': [('provider', '!=', '4geeks')]}">
-                    <!-- TODO -->
-                    <!-- <field name="p4geeks_client_id" attrs="{'required': [('provider', '=', '4geeks')]}" password="True"/>
-                    <field name="p4geeks_client_secret" attrs="{'required': [('provider', '=', '4geeks')]}" password="True"/> -->
-                    <field name="p4geeks_client_id" attrs="{'required': [('provider', '=', '4geeks')]}"/>
-                    <field name="p4geeks_client_secret" attrs="{'required': [('provider', '=', '4geeks')]}"/>
+                    <field name="p4geeks_client_id" attrs="{'required': [('provider', '=', '4geeks')]}" password="True"/>
+                    <field name="p4geeks_client_secret" attrs="{'required': [('provider', '=', '4geeks')]}" password="True"/>
                     <field name="p4geeks_entity_description"/>
                 </group>
             </group>

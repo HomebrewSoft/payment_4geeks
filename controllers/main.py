@@ -18,8 +18,11 @@ from odoo.tools.translate import _
 _logger = logging.getLogger(__name__)
 
 messages = {
-    'Succeeded': _('Payment Successfully received and submitted'),
-    'TransactionNotfound': _('Error: Transaction not found'),
+    'Succeeded': _('Payment Successfully received and submitted.'),
+    'TransactionNotFoundError': _('Transaction not found.'),
+    'InternalError': _('There is an internal error, please contact the administrator.'),
+    'ValidationError': _('We can not confirm your payment, please contact the administrator.'),
+    'PaymentError': _('There was an error in your payment; if you think is a mistake ,please contact the administrator.'),
 }
 
 
@@ -32,52 +35,91 @@ class P4GeeksController(http.Controller):
             'message': '',
             'redirect_brt': False,
         }
+
         PaymentAcquirer = request.env['payment.acquirer']
         acquirer_id = PaymentAcquirer.sudo().browse(request.website.get_4geeks_payment_acquirer_id())
-        try:
-            gpayments.client_id = acquirer_id.p4geeks_client_id
-            gpayments.client_secret = acquirer_id.p4geeks_client_secret
-            gpayments.auth()  # TODO review expiration
-        except:
-            pass  # TODO
+
         if reference:
             tx = request.env['payment.transaction'].sudo().search([('reference', '=', reference)])
-        if tx:
-            exp_month, exp_year = post.get('cardExpiry').split('/')
-            exp_year = '20' + exp_year
-            try:
-                result = gpayments.SimpleCharge.create(
-                    amount=post.get('amount'),
-                    description=reference,
-                    entity_description=acquirer_id.p4geeks_entity_description,
-                    currency=post.get('currency'),
-                    credit_card_number=post.get('cardnumber'),
-                    credit_card_security_code_number=post.get('cardCVC'),
-                    exp_month=exp_month,
-                    exp_year=exp_year,
-                )
-                charge_log = result.get('charge_log')
-                if charge_log['status'] == 'succeeded':
-                    values.update({
-                        'status': True,
-                        'reference': reference,
-                        'currency': charge_log['currency'],
-                        'amount': charge_log['amount'],
-                        'acquirer_reference': result.get('charge_id'),
-                        'partner_reference': post,
-                        'tx_msg': messages['Succeeded'],
-                    })
-                    res = request.env['payment.transaction'].sudo().form_feedback(values, '4geeks')
-                    print(res)
-            except:
-                raise  # TODO
-        elif not tx:
-            values.update({'status': False, 'redirect_brt': True, 'message': messages['TransactionNotfound']})
 
+        if not tx:
+            values.update({'status': False, 'message': messages['TransactionNotFoundError']})
+            return values
+
+        gpayments.client_id = acquirer_id.p4geeks_client_id
+        gpayments.client_secret = acquirer_id.p4geeks_client_secret
+
+        try:
+            gpayments.auth()
+            _logger.debug('Authenticated')
+        except gpayments.oauth_error.InvalidClientError as e:
+            _logger.error('Can not authenticate %s', e)
+            values.update({'status': False, 'message': messages['InternalError']})
+            tx.sudo()._set_transaction_error(messages['InternalError'])
+            return values
+
+        exp_month, exp_year = post.get('cardExpiry').split('/')
+        exp_year = '20' + exp_year
+
+        try:
+            result = gpayments.SimpleCharge.create(
+                amount=post.get('amount'),
+                description=reference,
+                entity_description=acquirer_id.p4geeks_entity_description,
+                currency=post.get('currency'),
+                credit_card_number=post.get('cardnumber'),
+                credit_card_security_code_number=post.get('cardCVC'),
+                exp_month=exp_month,
+                exp_year=exp_year,
+            )
+            _logger.debug('Payment processed in API: %s', pprint.pformat(result))
+        except gpayments.error.InvalidRequestError as e:
+            _logger.debug('PaymentError: %s', e)
+            tx.sudo()._set_transaction_error(messages['PaymentError'])
+            values.update({'status': False, 'message': messages['PaymentError']})
+            return values
+
+        charge_log = result.get('charge_log')
+        if charge_log['status'] == 'succeeded':
+            values.update({
+                'status': True,
+                'reference': reference,
+                'currency': charge_log['currency'].upper(),
+                'amount': charge_log['amount'],
+                'acquirer_reference': result.get('charge_id'),
+                'partner_reference': post,
+                'tx_msg': messages['Succeeded'],
+            })
+
+            _logger.debug('Processing form_feedback with values %s', pprint.pformat(values))
+            res = request.env['payment.transaction'].sudo().form_feedback(values, '4geeks')
+            if not res:
+                tx.sudo()._set_transaction_error(messages['ValidationError'])
+                values.update({
+                    'status': False,
+                    'message': messages['ValidationError'],
+                })
+        else:
+            values.update({
+                'status': False,
+                'reference': reference,
+                'currency': post.get('currency'),
+                'amount': result.get('amount'),
+                'acquirer_reference': result.get('charge_id'),
+                'partner_reference': post,
+                'tx_msg': messages['PaymentError'],
+            })
+
+            res = request.env['payment.transaction'].sudo().form_feedback(values, '4geeks')
+            if not res:
+                tx.sudo()._set_transaction_error(messages['ValidationError'])
+                values.update({
+                    'message': messages['ValidationError'],
+                })
         return values
 
     @http.route('/payment/4geeks', type='http', auth="public", website=True)
-    def cardconnect_payment(self, **post):
+    def p4geeks_payment(self, **post):
         """ 4geeks Payment Controller """
         result = self.p4geeks_do_payment(**post)
 

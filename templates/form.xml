@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="4geeks_form">
+        <input type='hidden' name='reference' t-att-value='reference'/>
+        <input type='hidden' name='amount' t-att-value='amount or "0.0"'/>
+        <input type='hidden' name='currency' t-att-value='currency.name'/>
+    </template>
+</odoo>
