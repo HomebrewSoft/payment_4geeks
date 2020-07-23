@@ -36,10 +36,8 @@ class PaymentTransaction(models.Model):
     def _4geeks_form_validate(self, data):
         status = data.get('status')
         res = {
-            'cct_txnid': data.get('acquirer_reference'),
             'acquirer_reference': data.get('acquirer_reference'),
             'state_message': data.get('tx_msg'),
-            'cct_txcurrency': data.get('currency'),
         }
         if status:
             self._set_transaction_done()

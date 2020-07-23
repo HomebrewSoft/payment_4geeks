@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import pprint
-from datetime import datetime
+from datetime import datetime, timedelta
 
 try:
     import gpayments
@@ -27,6 +27,16 @@ messages = {
 
 
 class P4GeeksController(http.Controller):
+    token_expiration = None
+
+    def authenticate(self, client_id, client_secret):
+        now = datetime.now()
+        if not self.token_expiration or self.token_expiration <= now:
+            gpayments.client_id = client_id
+            gpayments.client_secret = client_secret
+            auth = gpayments.auth()
+            self.token_expiration = now + timedelta(milliseconds=auth.data['expires_in'])
+
     def p4geeks_do_payment(self, **post):
         reference = post.get('reference')
         tx = None
@@ -46,13 +56,10 @@ class P4GeeksController(http.Controller):
             values.update({'status': False, 'message': messages['TransactionNotFoundError']})
             return values
 
-        gpayments.client_id = acquirer_id.p4geeks_client_id
-        gpayments.client_secret = acquirer_id.p4geeks_client_secret
-
         try:
-            gpayments.auth()
+            self.authenticate(acquirer_id.p4geeks_client_id, acquirer_id.p4geeks_client_secret)
             _logger.debug('Authenticated')
-        except gpayments.oauth_error.InvalidClientError as e:
+        except (AttributeError, gpayments.oauth_error.InvalidClientError) as e:
             _logger.error('Can not authenticate %s', e)
             values.update({'status': False, 'message': messages['InternalError']})
             tx.sudo()._set_transaction_error(messages['InternalError'])
