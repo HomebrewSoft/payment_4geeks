@@ -35,7 +35,7 @@ class P4GeeksController(http.Controller):
             gpayments.client_id = client_id
             gpayments.client_secret = client_secret
             auth = gpayments.auth()
-            self.token_expiration = now + timedelta(milliseconds=auth.data['expires_in'])
+            self.token_expiration = now + timedelta(seconds=auth.data['expires_in'])
 
     def p4geeks_do_payment(self, **post):
         reference = post.get('reference')
