@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Payment 4Geeks',
-    'version': '13.0.0.1.0',
+    'version': '13.0.1.0.0',
     'author': 'HomebrewSoft',
     'website': 'https://gitlab.com/HomebrewSoft/misc/payment_4geeks',
+    'license': 'LGPL-3',
     'depends': [
         'payment',
         'website',
