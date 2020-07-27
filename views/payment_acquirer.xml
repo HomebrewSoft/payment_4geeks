@@ -10,6 +10,12 @@
                     <field name="p4geeks_client_id" attrs="{'required': [('provider', '=', '4geeks')]}" password="True"/>
                     <field name="p4geeks_client_secret" attrs="{'required': [('provider', '=', '4geeks')]}" password="True"/>
                     <field name="p4geeks_entity_description"/>
+                    <span colspan="2">
+                        <strong>Note:</strong>
+                        Use your
+                        <code>test</code>
+                        credentials in order to use the test environment.
+                    </span>
                 </group>
             </group>
         </field>

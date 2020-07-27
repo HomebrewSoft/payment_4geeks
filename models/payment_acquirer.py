@@ -22,5 +22,6 @@ class PaymentAcquirer(models.Model):
     )
     p4geeks_entity_description = fields.Char(
         string='Entity Description',
+        required_if_provider='4geeks',
         groups='base.group_user',
     )

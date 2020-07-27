@@ -28,4 +28,9 @@
             'gpayments',
         ],
     },
+    'images': [
+        'static/description/images/payment_screenshot.png',
+        'static/description/images/credentials.png',
+        'static/description/images/transaction.png',
+    ]
 }
