@@ -1,1 +1,1 @@
-gpayments
+gpayments==0.2
